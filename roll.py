@@ -12,6 +12,14 @@ FLAVOR_D0 = [
     "You roll a 0-sided die. Nothing happens. Forever."
 ]
 
+FLAVOR_0_DICE = [
+    "You reach into your bag, pull out absolutely nothing, and roll it. You get a nothing.",
+    "0 dice rolled. 0 energy expended. 0 fun.",
+    "You roll 0 dice. The ghost of a natural 20 haunts you.",
+    "Nothing rolls across the table. It's a very quiet game night.",
+    "Are you trying to save on virtual plastic?"
+]
+
 FLAVOR_D1 = [
     "Really?",
     "You know the answer is going to be the same each time, right?",
@@ -85,8 +93,12 @@ FLAVOR_8BALL = [
 def process_command(command_str):
     output = ""
     
+    # 0. Help Logic
+    if "help" in command_str:
+        return "Usage: /roll <NdM>[+|-K] [adv|dis]. Examples: '1d20', '2d6+4', '1d20 adv'. Special commands: 'coinflip', '8ball'."
+
     # 1. Coinflip Logic
-    if "coinflip" in command_str:
+    elif "coinflip" in command_str:
         output = random.choice(["Heads", "Tails"])
         
     # 2. 8-Ball Logic
@@ -97,9 +109,9 @@ def process_command(command_str):
 
     # 3. Dice Parsing Logic
     else:
-        match = re.search(r'(\d+)d(\d+)(?:([+-])(\d+))?', command_str)
+        match = re.search(r'(\d+)\s*d\s*(\d+)(?:\s*([+-])\s*(\d+))?(?:\s*(adv|dis|advantage|disadvantage))?', command_str)
         if not match:
-            return "Invalid command or roll format."
+            return "Invalid command or roll format. Try '/roll help' for some insight."
 
         num_dice = int(match.group(1))
         sides = int(match.group(2))
@@ -111,14 +123,35 @@ def process_command(command_str):
         modifier = int(match.group(4)) if match.group(4) else 0
         if sign == '-':
             modifier = -modifier
+            
+        adv_dis = match.group(5)
 
+        # Check for 0 dice
+        if num_dice == 0:
+            output = random.choice(FLAVOR_0_DICE)
         # Check for impossible geometry (d0)
-        if sides == 0:
+        elif sides == 0:
             output = random.choice(FLAVOR_D0)
         else:
             # Generate rolls
-            rolls = [random.randint(1, sides) for _ in range(num_dice)]
-            total = sum(rolls) + modifier
+            if adv_dis:
+                batch1 = [random.randint(1, sides) for _ in range(num_dice)]
+                batch2 = [random.randint(1, sides) for _ in range(num_dice)]
+                sum1 = sum(batch1)
+                sum2 = sum(batch2)
+                
+                is_adv = adv_dis.startswith('adv')
+                if is_adv:
+                    rolls = batch1 if sum1 >= sum2 else batch2
+                    dropped = batch1 if sum1 < sum2 else batch2
+                else:
+                    rolls = batch1 if sum1 <= sum2 else batch2
+                    dropped = batch1 if sum1 > sum2 else batch2
+                total = sum(rolls) + modifier
+            else:
+                rolls = [random.randint(1, sides) for _ in range(num_dice)]
+                total = sum(rolls) + modifier
+                dropped = None
 
             # Determine standard prefix
             prefix = f"{random.choice(FLAVOR_GENERIC)} {total}!"
@@ -136,11 +169,17 @@ def process_command(command_str):
                 prefix = f"{random.choice(FLAVOR_FIREBALL)} (Total damage: {total})"
 
             # Format final output for dice
-            if num_dice == 1 and modifier == 0:
-                output = prefix
-            else:
+            if adv_dis:
+                adv_str = "Advantage" if adv_dis.startswith('adv') else "Disadvantage"
                 rolls_str = " ".join(map(str, rolls))
-                output = f"{prefix} ({rolls_str})"
+                dropped_str = " ".join(map(str, dropped))
+                output = f"{prefix} [{adv_str}] (Kept: {rolls_str} | Dropped: {dropped_str})"
+            else:
+                if num_dice == 1 and modifier == 0:
+                    output = prefix
+                else:
+                    rolls_str = " ".join(map(str, rolls))
+                    output = f"{prefix} ({rolls_str})"
 
     # Final safety check: Truncate strictly to 200 chars for MeshMonitor safety
     if len(output) > 200:
@@ -162,7 +201,7 @@ def main():
         raw_cmd = " ".join(sys.argv[1:]).lower()
 
     if not raw_cmd.strip():
-        result_text = "No command provided."
+        result_text = "No command provided. Try '/roll help' for some insight."
     else:
         result_text = process_command(raw_cmd)
         
