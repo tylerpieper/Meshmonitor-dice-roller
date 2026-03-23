@@ -5,7 +5,7 @@ Script for Meshmonitor that can be used with the auto-responder module to respon
 1. Place `roll.py` in Meshmonitor's /data/scripts directory.
 2. Make it executable with `chmod +x roll.py`
 3. Open MeshMonitor, go to the automation page, and enable Auto Responder.
-4. Add a Trigger - `/roll {dice}, /coinflip, /8ball, /8ball {text}` - with type Script and select `roll.py`
+4. Add a Trigger - `/roll {dice}, /coinflip, /8ball{question:.*}` - with type Script and select `roll.py`
 5. Select the channels and/or DMs you'd like the auto repsonder to listen on.
 6. Click Add next to `roll.py` to create the trigger.
 7. Click save at the bottom of the page to save the Automation settings.
