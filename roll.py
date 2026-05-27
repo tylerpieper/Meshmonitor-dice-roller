@@ -73,22 +73,46 @@ FLAVOR_8BALL_PREFIXES = [
     "The GM smiles cryptically and says..."
 ]
 
-FLAVOR_8BALL = [
-    # Classics
-    "it is certain.", "it is decidedly so.", "without a doubt.",
-    "yes, definitely.", "you may rely on it.", "as I see it, yes.",
-    "most likely.", "outlook good.", "yes.", "signs point to yes.",
-    "reply hazy, try again.", "ask again later.", "better not tell you now.",
-    "cannot predict now.", "concentrate and ask again.",
-    "don't count on it.", "my reply is no.", "my sources say no.",
-    "outlook not so good.", "very doubtful.",
-    # Humorous additions
-    "have you tried turning it off and on again?",
-    "the spirits are on break, try later.",
-    "outlook not so good, much like your fashion sense.",
-    "in this economy? absolutely not.",
-    "I'm just a script, don't put this pressure on me."
-]
+FLAVOR_8BALL_STANDARD = {
+    "positive": [
+        "it is certain.", "it is decidedly so.", "without a doubt.",
+        "yes, definitely.", "you may rely on it.", "as I see it, yes.",
+        "most likely.", "outlook good.", "yes.", "signs point to yes."
+    ],
+    "unknown": [
+        "reply hazy, try again.", "ask again later.", "better not tell you now.",
+        "cannot predict now.", "concentrate and ask again."
+    ],
+    "negative": [
+        "don't count on it.", "my reply is no.", "my sources say no.",
+        "outlook not so good.", "very doubtful."
+    ]
+}
+
+FLAVOR_8BALL_HUMOROUS = {
+    "positive": [
+        "yeah, sure, whatever you say.",
+        "100% yes. don't mess this up.",
+        "the math checks out. you're good.",
+        "absolutely, but it'll cost you.",
+        "yes, but it's going to be weird.",
+        "thumbs up, buddy."
+    ],
+    "unknown": [
+        "have you tried turning it off and on again?",
+        "the spirits are on break, try later.",
+        "I'm just a script, don't put this pressure on me.",
+        "404 answer not found.",
+        "reply blocked by cosmic firewall."
+    ],
+    "negative": [
+        "outlook not so good, much like your fashion sense.",
+        "in this economy? absolutely not.",
+        "no, and you should feel bad for asking.",
+        "hard pass.",
+        "even the dice are laughing at you."
+    ]
+}
 
 def process_command(command_str):
     output = ""
@@ -103,8 +127,12 @@ def process_command(command_str):
         
     # 2. 8-Ball Logic
     elif "8ball" in command_str:
+        category = random.choices(["positive", "unknown", "negative"], weights=[0.5, 0.25, 0.25])[0]
+        is_humorous = random.random() < 0.10
+        pool = FLAVOR_8BALL_HUMOROUS if is_humorous else FLAVOR_8BALL_STANDARD
+        
         prefix = random.choice(FLAVOR_8BALL_PREFIXES)
-        answer = random.choice(FLAVOR_8BALL)
+        answer = random.choice(pool[category])
         output = f"{prefix} {answer}"
 
     # 3. Dice Parsing Logic
